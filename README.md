@@ -1,5 +1,5 @@
 # CalibreLibgenSci
-A Libgen Non-Fiction store plugin for Calibre
+A Libgen Non-Fiction/Sci-tech store plugin for Calibre
 
 ## Installation
 - Download the latest release from [here](https://github.com/notlibrary/CalibreLibgenSci)
@@ -13,6 +13,7 @@ A Libgen Non-Fiction store plugin for Calibre
 
     ![image](https://user-images.githubusercontent.com/40695473/149553512-ce27e902-96bc-48d2-a0db-1564aa87e44c.png)
 - Search!
+- For Fiction books library [install other plugin](https://github.com/fallaciousreasoning/CalibreLibgenStore)
 
 ## Testing & development
 
