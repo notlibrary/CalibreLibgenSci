@@ -63,10 +63,8 @@ class LibgenBook:
         # Parse the Author(s) column into `authors`
         authors = ''
         authors_node = xpath(node, AUTHOR_XPATH)
-        if authors_node:
-            authors = ' & '.join([
-                author.text for author in authors_node 
-            ])
+        if authors_node[0].text and authors_node[-1].text:
+            authors = ' & '.join([ author.text for author in authors_node ])
 
         if len(authors) == 0:
             authors = 'Unknown'
