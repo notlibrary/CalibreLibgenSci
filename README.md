@@ -13,7 +13,13 @@ A Libgen Non-Fiction/Sci-tech store plugin for [Calibre](https://calibre-ebook.c
 
     ![image](https://user-images.githubusercontent.com/40695473/149553512-ce27e902-96bc-48d2-a0db-1564aa87e44c.png)
 - Search!
-- For Fiction books library [install other plugin](https://github.com/fallaciousreasoning/CalibreLibgenStore/releases)
+
+Use `p%NUM%` at the end of the query in Calibre Get books <kbd>G</kbd> gui to set a specific libgen output page offset
+(script implies 25 entries per page this also may suppress or alter other store plugins output):
+
+```Title: control p42```
+
+For Fiction books library [install other plugin](https://github.com/fallaciousreasoning/CalibreLibgenStore/releases)
 
 ## Testing & development
 
@@ -30,5 +36,6 @@ Run this to zip all required files together:
 ```shell
 make
 ```
+
 ## P.S.
 I wouldn't maintain it anymore just forked it from fiction parser for fun and profit.  

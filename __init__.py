@@ -36,14 +36,14 @@ class LibgenSciStore(StorePlugin):
 
         self.libgen = LibgenNonFictionClient()
 
-    def search(self, query, max_results=25, timeout=60, total_pages=1):
+    def search(self, query, max_results=25, timeout=60):
         """Searches LibGen for Books. Since the mirror links are not direct
         downloads, it should not provide these as `s.downloads`.
         """
         debug_print = partial(module_debug_print, 'LibgenSciStore:search:')
         debug_print('search:query = ', query)
 
-        libgen_results = self.libgen.search(query, max_results, total_pages)
+        libgen_results = self.libgen.search(query, max_results)
         debug_print('Search URL: ', self.libgen.search_url)
         debug_print('Total Books Found: ', self.libgen.total_results)
         
@@ -57,8 +57,8 @@ class LibgenSciStore(StorePlugin):
 
                 s.store_name = PLUGIN_NAME
                 s.cover_url = result.image_url
-                s.title = '{}  [{}] ({}, {}{})'.format(
-                    result.title, result.series, result.language, mirror.size, mirror.unit)
+                s.title = '{} ({});({}, {}{});(p{})'.format(
+                    result.title, result.series, result.language, mirror.size, mirror.unit, result.poffset)
                 s.author = result.authors
                 s.price = '0.00'
                 s.detail_item = result.md5

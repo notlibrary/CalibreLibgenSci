@@ -2,6 +2,7 @@
 
 from lxml import etree
 import random
+import math
 from urllib.request import urlopen
 from urllib.parse import urlencode
 from urllib.parse import urlparse
@@ -27,7 +28,7 @@ class LibgenMirror:
         return LibgenMirror(url, file_extension, file_size, file_size_unit)
 
 class LibgenBook:
-    def __init__(self, libid, authors, title, series, publisher, year , pages, language, file_size, file_extension, mirrors, md5, image_url):
+    def __init__(self, libid, authors, title, series, publisher, year , pages, language, file_size, file_extension, mirrors, md5, image_url, poffset):
         self.libid = libid
         self.authors = authors
         self.title = title
@@ -41,9 +42,9 @@ class LibgenBook:
         self.mirrors = mirrors
         self.md5 = md5
         self.image_url = image_url
-
+        self.poffset = poffset
     @staticmethod
-    def parse(node):
+    def parse(node, orig_page):
         LIBID_XPATH='/td[1]'
         AUTHOR_XPATH = '/td[2]//a'
         TITLE_XPATH = "/td[3]/a[@id="
@@ -60,9 +61,12 @@ class LibgenBook:
         TITLE_XPATH = TITLE_XPATH + libid + "]"
         
         # Parse the Author(s) column into `authors`
-        authors = ' & '.join([
-            author.text for author in xpath(node, AUTHOR_XPATH)
-        ])
+        authors = ''
+        authors_node = xpath(node, AUTHOR_XPATH)
+        if authors_node:
+            authors = ' & '.join([
+                author.text for author in authors_node 
+            ])
 
         if len(authors) == 0:
             authors = 'Unknown'
@@ -77,8 +81,7 @@ class LibgenBook:
         publisher = xpath(node, PUBLISHER_XPATH)[0].text
         year = xpath(node, YEAR_XPATH)[0].text
         pages = xpath(node, PAGES_XPATH)[0].text
-        language = xpath(node, LANGUAGE_XPATH)[0].text
-        
+        language = xpath(node, LANGUAGE_XPATH)[0].text 
         file_size_str = xpath(node, FILE_SIZE_XPATH)[0].text
         file_size_str = file_size_str.split()
         
@@ -95,32 +98,36 @@ class LibgenBook:
         md5_text = xpath(node, TITLE_XPATH)[0].get('href')
         parsed_md5=urlparse(md5_text)
         md5 = parse_qs(parsed_md5.query)['md5'][0]
-
+        poffset = orig_page
         if not authors or not title:
             return None
 
-        return LibgenBook(libid, authors, title, series, publisher, year , pages, language, file_size, file_extension, mirrors, md5,  None)
+        return LibgenBook(libid, authors, title, series, publisher, year , pages, language, file_size, file_extension, mirrors, md5,  None, poffset)
 
 
 class LibgenSearchResults:
+    results = []
     def __init__(self, results, total):
-        self.results = results
+        self.results = LibgenSearchResults.results
         self.total = total
         
     @staticmethod
-    def parse(node):
+    def parse(node, poffset):
     
         SEARCH_ROW_SELECTOR = "/body/table[3]/tr"
         result_rows = xpath(node, SEARCH_ROW_SELECTOR)
-        results = []
         for row in result_rows[1:]:
-            book = LibgenBook.parse(row)
+            book = LibgenBook.parse(row, poffset)
             if book is None:
                 continue
-            results.append(book)
+            LibgenSearchResults.results.append(book)
 
-        total = len(results)
-        return LibgenSearchResults(results, total)
+        total = len(LibgenSearchResults.results)
+        return LibgenSearchResults(LibgenSearchResults.results, total)
+    @staticmethod
+    def clear():
+        LibgenSearchResults.results = []
+        return 0
 
 
 class LibgenNonFictionClient:
@@ -139,28 +146,59 @@ class LibgenNonFictionClient:
         else:
             self.base_url = "http://{}/".format(mirror)
 
-    def search(self, query, max_results, total_pages):
+    def get_page_offset(self, query):
+        
+        print ("QUERY", query)
+        data = [ 0 ]
+        data[-1] = 0 
+        data = [ int(s) for s in query.split('p') if s.isdigit() ]
+        print("DATA", data)
+        if data: 
+            return data[-1]
+        return 0
+        
+    def search(self, query, max_results):
+        
+        squery = query.decode("utf-8")
+        
+        poffset = self.get_page_offset(squery)
+        poffset = poffset + 1 
+        vquery = squery.rsplit(' ', 1)[0]
+        
+        print("FINAL QUERY QUERY")
+        print(vquery)
+        RESULTS_PER_PAGE = 25.0        
+        total_pages = int(math.ceil(max_results/RESULTS_PER_PAGE))
+        
         url = self.base_url
-        query_params = {
-            'req': query,
-            'open': 2,
-            'res': max_results,
-            'page': 1,
-        }
+        
+        last_page = poffset + total_pages + 1
+        results = [ ]
+        total_results = 0
+        self.total_results = total_results  
+        LibgenSearchResults.clear()
+        
+        for page in range(poffset, last_page):
+            query_params = {
+                'req': vquery,
+                'open': 2,
+                'res': int(RESULTS_PER_PAGE),
+                'page': page,
+            }
+            query_string = urlencode(query_params)
+            search_url = url + 'search.php?' + query_string
+            self.search_url = search_url
+            
+            request = urlopen(search_url)
+            html = request.read()
 
-        query_string = urlencode(query_params)
-        search_url = url + 'search.php?' + query_string
-        self.search_url = search_url
-        
-        request = urlopen(search_url)
-        html = request.read()
-
-        parser = etree.HTMLParser()
-        tree = etree.fromstring(html, parser)
-        
-        result = LibgenSearchResults.parse(tree)
-        
-        self.total_results = result.total
+            parser = etree.HTMLParser()
+            tree = etree.fromstring(html, parser)
+            
+            result = LibgenSearchResults.parse(tree, poffset - 1)
+            total_results = result.total
+                 
+        self.total_results = total_results    
         return result
 
     def get_detail_url(self, md5):
