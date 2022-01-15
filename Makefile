@@ -14,4 +14,4 @@ install: zip
 	calibre-customize -a "$(zip_file)"
 	
 clean:
-	rm $(zip_file)
+	rm "$(zip_file)"
