@@ -43,6 +43,7 @@ class LibgenBook:
         self.md5 = md5
         self.image_url = image_url
         self.poffset = poffset
+        
     @staticmethod
     def parse(node, orig_page):
         LIBID_XPATH='/td[1]'
@@ -122,9 +123,10 @@ class LibgenSearchResults:
 
         total = len(LibgenSearchResults.results)
         return LibgenSearchResults(LibgenSearchResults.results, total)
+        
     @staticmethod
     def clear():
-        LibgenSearchResults.results = []
+        LibgenSearchResults.results.clear()
         return 0
 
 
@@ -166,7 +168,7 @@ class LibgenNonFictionClient:
         url = self.base_url
         
         last_page = poffset + total_pages + 1
-        results = [ ]
+
         total_results = 0
         self.total_results = total_results  
         LibgenSearchResults.clear()
