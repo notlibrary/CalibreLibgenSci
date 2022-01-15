@@ -145,12 +145,9 @@ class LibgenNonFictionClient:
             self.base_url = "http://{}/".format(mirror)
 
     def get_page_offset(self, query):
-        
-        print ("QUERY", query)
         data = [ 0 ]
         data[-1] = 0 
         data = [ int(s) for s in query.split('p') if s.isdigit() ]
-        print("DATA", data)
         if data: 
             return data[-1]
         return 0
@@ -163,8 +160,6 @@ class LibgenNonFictionClient:
         poffset = poffset + 1 
         vquery = squery.rsplit(' ', 1)[0]
         
-        print("FINAL QUERY QUERY")
-        print(vquery)
         RESULTS_PER_PAGE = 25.0        
         total_pages = int(math.ceil(max_results/RESULTS_PER_PAGE))
         

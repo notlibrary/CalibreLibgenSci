@@ -7,3 +7,12 @@ all: zip
 
 zip:
 	@ echo "creating new $(zip_file)" && zip "$(zip_file)" $(zip_contents) && echo "created new $(zip_file)"
+
+install: zip
+	@ echo "installing plugin from file"
+	calibre-debug -s
+	calibre-customize -a $(zip_file)
+	calibre
+	
+clean:
+	rm $(zip_file)
