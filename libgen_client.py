@@ -1,20 +1,33 @@
 #!/usr/bin/env python3
-
-from lxml import etree
 import random
 import math
+
+from random import randint
+from time import sleep
+from multiprocessing.pool import ThreadPool
+
+from lxml import etree
+
+import urllib.request, urllib.parse, urllib.error
 from urllib.request import urlopen
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
-from multiprocessing.pool import ThreadPool
+
 
 def fetch_url(url):
-    try:
-        response = urlopen(url)
-        return url, response.read(), None
-    except Exception as e:
-        return url, None, e
+    retries = 5
+    while retries:
+        try:
+            response = urlopen(url)
+            return url, response.read(), None
+        except urllib.error.HTTPError as e:
+            if e.code == 503:
+                sleep( randint(50,200)/1000.0) 
+                retries -= 1
+                continue
+            return url, None, e
+    return url, None, e        
 
 def xpath(node, path):
     tree = node.getroottree()
@@ -167,7 +180,7 @@ class LibgenNonFictionClient:
         squery = query.decode("utf-8")
         
         poffset = self.get_page_offset(squery)
-        poffset = poffset + 1 
+
         vquery = squery.rsplit(' ', 1)[0]
         
         RESULTS_PER_PAGE = 25.0        
@@ -175,18 +188,23 @@ class LibgenNonFictionClient:
         
         url = self.base_url
         
-        last_page = poffset + total_pages + 1
+        last_page = poffset + total_pages 
 
         total_results = 0
         self.total_results = total_results  
         LibgenSearchResults.clear()
         
         urls = []
-        for page in range(poffset, last_page):
+        for page in range(poffset + 1, last_page + 1):
             query_params = {
-                'req': vquery,
-                'open': 2,
                 'res': int(RESULTS_PER_PAGE),
+                'open': 2,
+                'req': vquery,
+                'phrase': 1,
+                'view' : 'simple',
+                'column' : 'def',
+                'sort' : 'def',
+                'sortmode' : 'ASC',
                 'page': page,
             }
             query_string = urlencode(query_params)
@@ -200,7 +218,7 @@ class LibgenNonFictionClient:
         for cur_url, html, error in results:
             if error is None:
                 tree = etree.fromstring(html, parser)       
-                result = LibgenSearchResults.parse(tree, poffset - 1)
+                result = LibgenSearchResults.parse(tree, poffset)
                 total_results = result.total
             else:
                 print("error fetching %r: %s" % (cur_url, error))
