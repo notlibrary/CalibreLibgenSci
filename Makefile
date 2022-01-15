@@ -11,8 +11,7 @@ zip:
 install: zip
 	@ echo "installing plugin from file"
 	calibre-debug -s
-	calibre-customize -a $(zip_file)
-	calibre
+	calibre-customize -a "$(zip_file)"
 	
 clean:
 	rm $(zip_file)
