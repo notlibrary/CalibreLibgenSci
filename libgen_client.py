@@ -7,6 +7,14 @@ from urllib.request import urlopen
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
+from multiprocessing.pool import ThreadPool
+
+def fetch_url(url):
+    try:
+        response = urlopen(url)
+        return url, response.read(), None
+    except Exception as e:
+        return url, None, e
 
 def xpath(node, path):
     tree = node.getroottree()
@@ -173,6 +181,7 @@ class LibgenNonFictionClient:
         self.total_results = total_results  
         LibgenSearchResults.clear()
         
+        urls = []
         for page in range(poffset, last_page):
             query_params = {
                 'req': vquery,
@@ -183,17 +192,22 @@ class LibgenNonFictionClient:
             query_string = urlencode(query_params)
             search_url = url + 'search.php?' + query_string
             self.search_url = search_url
-            
-            request = urlopen(search_url)
-            html = request.read()
+            urls.append(search_url)
+        
+        results = ThreadPool(2).imap_unordered(fetch_url, urls)
+        parser = etree.HTMLParser()
+        
+        for cur_url, html, error in results:
+            if error is None:
+                tree = etree.fromstring(html, parser)       
+                result = LibgenSearchResults.parse(tree, poffset - 1)
+                total_results = result.total
+            else:
+                print("error fetching %r: %s" % (cur_url, error))
 
-            parser = etree.HTMLParser()
-            tree = etree.fromstring(html, parser)
-            
-            result = LibgenSearchResults.parse(tree, poffset - 1)
-            total_results = result.total
-                 
-        self.total_results = total_results    
+        self.total_results = total_results
+        urls.clear()
+        
         return result
 
     def get_detail_url(self, md5):
@@ -202,6 +216,7 @@ class LibgenNonFictionClient:
         return detail_url
 
     def get_download_url(self, md5):
+        necronomicon_url = 'http://31.42.184.140/main/268000/ad68152110bfd420c962911da22c2a14/AD68152110BFD420C962911DA22C2A14.pdf'
         download_urls = [
             'http://library.lol/main/{}'.format(md5),
             'http://library.lol/main/{}&open=2'.format(md5),
@@ -209,24 +224,28 @@ class LibgenNonFictionClient:
             'https://3lib.net/md5/{}&open=2'.format(md5),
             'http://bookfi.net/md5/{}&open=2'.format(md5),
         ]
-
+        parser = etree.HTMLParser()
+        
         for url in download_urls:
             try:
                 request = urlopen(url)
                 html = request.read()
-
-                parser = etree.HTMLParser()
                 tree = etree.fromstring(html, parser)
 
                 #SELECTOR = "/body/h2/a[contains(., 'GET')]/@href"
                 SELECTOR = "//a[contains(., 'GET')]"
                 link = tree.xpath(SELECTOR)
-                
-                
+                     
                 final_url = link[0].get('href')
+                
+                if not final_url:
+                    continue
+                
                 return final_url
             except:
                 continue
+                
+        return necronomicon_url
 
 if __name__ == "__main__":
     client = LibgenNonFictionClient()
