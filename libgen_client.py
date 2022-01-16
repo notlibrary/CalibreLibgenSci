@@ -14,7 +14,6 @@ from urllib.parse import urlencode
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
 
-
 def fetch_url(url):
     retries = 5
     while retries:
@@ -200,7 +199,7 @@ class LibgenNonFictionClient:
         return 0
         
     def search(self, query, max_results):
-        self.update_download_links = []
+        self.update_download_links.clear()
         squery = query.decode("utf-8")
         
         poffset = self.get_page_offset(squery)
@@ -298,8 +297,13 @@ class LibgenNonFictionClient:
         page = self.get_book_page(md5)
         
         if self.update_download_links[page] == 1:
+            self.update_download_links[page] = 2
             self.update_download_urls(page)
             self.update_download_links[page] = 0
+            
+        while self.update_download_links[page] == 2:
+            sleep( randint(50,200)/1000.0)
+            
         return self.download_links[md5]
         
 
