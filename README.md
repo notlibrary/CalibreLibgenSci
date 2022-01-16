@@ -15,13 +15,13 @@ make install
 ```
 
 ## Usage
-- Click the 'Get Books' menu in Calibre
+- Click the 'Get Books' <kbd>G</kbd> menu in Calibre
 - Ensure that 'Libgen Sci-tech' is selected in the search providers menu
 
     ![image](https://user-images.githubusercontent.com/40695473/149553512-ce27e902-96bc-48d2-a0db-1564aa87e44c.png)
 - Search!
 
-Use `p%NUM%` at the end of the query in Calibre Get books <kbd>G</kbd> gui to set a specific libgen output page offset
+Use `p%NUM%` at the end of the query in Calibre 'Get Books' <kbd>G</kbd> gui to set a specific libgen output page offset
 (script implies 25 entries per page this also may suppress or alter other store plugins output):
 
 ```

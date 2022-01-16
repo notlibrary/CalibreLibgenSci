@@ -1,5 +1,5 @@
 <p>Libgen Sci-Tech</p>
 <ul>
-  <li>Adds a Libgen Non-fiction/Sci-Tech search provider to calibre.</li>
+  <li>Adds a Libgen Non-fiction/Sci-Tech search provider to Calibre.</li>
   <li>Please report any errors or requests on <a href="https://github.com/notlibrary/CalibreLibgenSci">this plugin’s GitHub repository page</a>.</li>
 </ul>

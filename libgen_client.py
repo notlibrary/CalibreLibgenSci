@@ -27,7 +27,29 @@ def fetch_url(url):
                 retries -= 1
                 continue
             return url, None, e
-    return url, None, e        
+    return url, None, urllib.error.HTTPError   
+    
+def scrap_download_link(md5):
+    necronomicon_url = 'http://31.42.184.140/main/268000/ad68152110bfd420c962911da22c2a14/AD68152110BFD420C962911DA22C2A14.pdf'
+    download_urls = [
+        'http://library.lol/main/{}'.format(md5),
+        'http://library.lol/main/{}&open=2'.format(md5),
+        'http://library.lol/main/{}&open=1'.format(md5),
+        'https://3lib.net/md5/{}&open=2'.format(md5),
+        'http://bookfi.net/md5/{}&open=2'.format(md5),
+    ]
+    for url in download_urls:
+        try:
+            final_link = fetch_url(url)
+            
+            if not final_link:
+                continue
+            md5t = md5,
+            return final_link + md5t
+        except urllib.error.HTTPError as e:
+            continue
+            
+    return necronomicon_url, None, e, md5
 
 def xpath(node, path):
     tree = node.getroottree()
@@ -153,7 +175,6 @@ class LibgenSearchResults:
 
 class LibgenNonFictionClient:
     def __init__(self, mirror=None):
-
         MIRRORS = [
             "libgen.rs",
             "libgen.is",
@@ -166,6 +187,9 @@ class LibgenNonFictionClient:
             self.base_url = "http://{}/".format(MIRRORS[0])
         else:
             self.base_url = "http://{}/".format(mirror)
+        
+        self.download_links = {}
+        self.update_download_links = []
 
     def get_page_offset(self, query):
         data = [ 0 ]
@@ -176,7 +200,7 @@ class LibgenNonFictionClient:
         return 0
         
     def search(self, query, max_results):
-        
+        self.update_download_links = []
         squery = query.decode("utf-8")
         
         poffset = self.get_page_offset(squery)
@@ -211,7 +235,8 @@ class LibgenNonFictionClient:
             search_url = url + 'search.php?' + query_string
             self.search_url = search_url
             urls.append(search_url)
-        
+            self.update_download_links.append(1)
+            
         results = ThreadPool(2).imap_unordered(fetch_url, urls)
         parser = etree.HTMLParser()
         
@@ -224,46 +249,59 @@ class LibgenNonFictionClient:
                 print("error fetching %r: %s" % (cur_url, error))
 
         self.total_results = total_results
+        
         urls.clear()
+        
         
         return result
 
     def get_detail_url(self, md5):
+        
         detail_url = '{}book/index.php?md5={}'.format(self.base_url, md5)
 
         return detail_url
+        
+    def update_download_urls(self, page):
+        self.download_links.clear()
+        urls = []
 
-    def get_download_url(self, md5):
-        necronomicon_url = 'http://31.42.184.140/main/268000/ad68152110bfd420c962911da22c2a14/AD68152110BFD420C962911DA22C2A14.pdf'
-        download_urls = [
-            'http://library.lol/main/{}'.format(md5),
-            'http://library.lol/main/{}&open=2'.format(md5),
-            'http://library.lol/main/{}&open=1'.format(md5),
-            'https://3lib.net/md5/{}&open=2'.format(md5),
-            'http://bookfi.net/md5/{}&open=2'.format(md5),
-        ]
+        for i in range(page*25, page*25 + 25): 
+            book = LibgenSearchResults.results[i]
+            urls.append(book.md5)
+       
+        results = ThreadPool(2).imap_unordered(scrap_download_link, urls)
         parser = etree.HTMLParser()
         
-        for url in download_urls:
-            try:
-                request = urlopen(url)
-                html = request.read()
+        for cur_url, html, error, md5 in results:
+            if error is None and html:
                 tree = etree.fromstring(html, parser)
-
                 #SELECTOR = "/body/h2/a[contains(., 'GET')]/@href"
                 SELECTOR = "//a[contains(., 'GET')]"
-                link = tree.xpath(SELECTOR)
-                     
-                final_url = link[0].get('href')
+                link = tree.xpath(SELECTOR)          
+                final_url = link[0].get('href')       
+                self.download_links[md5] = final_url 
                 
-                if not final_url:
-                    continue
-                
-                return final_url
-            except:
-                continue
-                
-        return necronomicon_url
+            else:
+                print("error fetching %r: %s" % (cur_url, error))                
+        urls.clear()
+        return 0
+        
+    def get_book_page(self, md5):
+        RESULTS_PER_PAGE = 25.0
+        for i in range(0, len(LibgenSearchResults.results)): 
+            book = LibgenSearchResults.results[i]
+            if book.md5 == md5:
+                return int(math.floor(i/RESULTS_PER_PAGE))
+        return 0
+        
+    def get_download_url(self, md5):
+        page = self.get_book_page(md5)
+        
+        if self.update_download_links[page] == 1:
+            self.update_download_urls(page)
+            self.update_download_links[page] = 0
+        return self.download_links[md5]
+        
 
 if __name__ == "__main__":
     client = LibgenNonFictionClient()

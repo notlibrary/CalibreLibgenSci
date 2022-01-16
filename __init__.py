@@ -23,7 +23,7 @@ __copyright__      = 'nameless_one'
 __docformat__      = 'restructuredtext en'
 
 PLUGIN_NAME        = 'Libgen Sci-tech'
-PLUGIN_DESCRIPTION = 'Adds a Libgen Non-fiction/Sci-tech search provider to calibre'
+PLUGIN_DESCRIPTION = 'Adds a Libgen Non-fiction/Sci-tech search provider to Calibre'
 PLUGIN_AUTHORS     = 'nameless_one (https://github.com/notlibrary/CalibreLibgenSci)'
 PLUGIN_VERSION     = (0, 4, 2)
 
