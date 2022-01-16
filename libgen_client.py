@@ -264,7 +264,7 @@ class LibgenNonFictionClient:
         self.download_links.clear()
         urls = []
 
-        for i in range(page*25, page*25 + 25): 
+        for i in range(page*25, min( page*25 + 25, len(LibgenSearchResults.results))): 
             book = LibgenSearchResults.results[i]
             urls.append(book.md5)
        
